@@ -1,41 +1,57 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-'''Code to (roughly) simulate wave function of a particle trapped in a
-3D harmonic potential well'''
+'''
+Code to (roughly) simulate wave function of a quantum particle trapped in a
+3D harmonic potential well with mass m, position q and momentum p using
+the Hamiltonian algorithm.
+
+Overall Method:
+1. Define the field interacting with the simulated particle. 
+2. Find its associated potential (in this case harmonic potential).
+3. Choose a starting position for particle.
+4. Propose a new position using the Hamiltonian algorithm.
+5. Accept or reject the new position according to the energy associated with it. 
+    Lower energy = accept (move to new position), higher energy = reject (particle doesn't move).
+6. Record accepted points.
+7. Plot a histogram of the points. 
+
+Algorithm Method:
+1. Particle is in position A (current_q).
+2. Generate a random momentum for the particle (current_p) using a probability distribution defined by
+    Hamiltonian algorithm. When position and momentum are defined, particle has energy current_E
+3. Use "leapfrog" method to iterate to a proposed position (q) and momentum (p) that has energy 
+    E such that E = current_E. In practise E ~ current_E, as leapfrog steps => 0, current_E = E. 
+4. If E <= current_E, the position q is accepted and recorded. If E > current_E, there is a finite
+        probabilty it will be accepted, but probably will be rejected and discarded. p is discarded. 
+5. If q is accepted, repeat with current_q = q, otherwise current_q is unchanged. 
+'''
 
 m = 1 #value is 1 for simplicity
 
-
-
 # p is represented by a vertical matrix, gives p^T * p as a scalar
-def K(p):
+def K(p): # K(p) is the kinetic energy of the particle
     K = 1/2 * np.vdot(p,p)/ m
     return float(K)
 
 
-def U(q):
+def U(q): #U(q) is the potential energy of the particle
     U = 1/2 * np.vdot(q,q)
     return float(U)
 
-#qT * q is essentially x^2 + y^2 + ... so we can
-#do normal partial diffs on it
+#qT * q is essentially x^2 + y^2 + ... so we can do normal partial differentials on it
 def dUdq(q):
     return q
 
-#q_test = np.matrix([2,3]).T
-#p=p-.3*dUdq(q_test)
-def randp():
+
+def randp(): #randp() proposes a new particle momentum, and a new particle position is chosen accordingly to keep the total energt (U+K) constant
     randp = np. vstack(
         [np.random.normal(0, np.sqrt(m), 1),
         np.random.normal(0, np.sqrt(m), 1),
         np.random.normal(0, np.sqrt(m), 1)])
     return randp
 
-
-#t = randp() - .3 * dUdq(q_test)
-#print(t)
-     
+#the Hamiltonian algorithm      
 def nDHMC(current_q, dt, nstep):
     q = current_q
     p = randp()
@@ -59,23 +75,20 @@ def nDHMC(current_q, dt, nstep):
 
         return current_q
 
-q0 = np.vstack([0,0,0])
-qs=q0
-q=q0
-
-
+qs = np.vstack([0,0,0])
+q=qs
 
 for a in range(50000):
     q = nDHMC(q, .071, 18)
-    qs=np.append(qs,q, axis = 1) # axis=1 -> 3d , axis=1 -> 1d
+    qs=np.append(qs,q, axis = 1) # axis=1 -> 3d , axis=0 -> 1d
 
-'''defines the analytic function we are trying to model'''
+# analytic() defines the analytic (predicted by theory) function we are trying to model
 def analytic(x):   # define analytic solution
     return (np.exp(-(x**2))) / (np.pi**0.5)
 
 
 
-###for 3d plotting### -- xyz were chosen arbitrarily
+###for 3d plotting### -- the plotting dimensions were chosen arbitrarily
 xdata = np.array(qs[0,:]).ravel()
 ydata = np.array(qs[1,:]).ravel()
 zdata = np.array(qs[2,:]).ravel()
